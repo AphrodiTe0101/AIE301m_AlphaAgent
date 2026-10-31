@@ -1,11 +1,11 @@
 {
-  "0": "Baseline do người viết: đảo chiều 5 phiên, momentum 60 phiên, biến động thấp, khối lượng đột biến. Cả 4 đều yếu (IC ≤ 0,013) và turnover cao tới 78 lần/năm, phí ăn hết lợi nhuận.",
-  "1": "Baseline yếu và tốn phí. Thử 8 giả thuyết mới về dòng tiền và tâm lý: phân kỳ giá–khối lượng, neo đỉnh 52 tuần, cổ phiếu 'xổ số' (skew), Amihud, gap qua đêm.",
-  "2": "pv_divergence và near_high dẫn đầu, gần như không tương quan với nhau -> lai ghép. Đột biến cửa sổ để kiểm tra độ bền. Amihud và overnight có IC âm -> đảo dấu.",
-  "3": "Gen 2: decay_linear gặp NaN nên bị loại -> chuyển sang ts_mean. pv_div cửa sổ 20 yếu hẳn = nhạy tham số. Làm mượt tín hiệu để giảm turnover, gộp 3 nguồn tín hiệu.",
-  "4": "Alpha đầu tiên vượt rổ sau phí (high_dist_slow). Nhưng elite toàn biến thể near_high (tương quan 0,7–0,95) -> tìm tín hiệu trực giao: MAX effect, low beta, khối lượng phiên tăng.",
-  "5": "low_beta có IC âm mạnh (t = -2,65) -> đảo thành high beta (cược theo chu kỳ, cần cảnh giác). up_volume_share trực giao (corr 0,27) -> ghép vào alpha dẫn đầu.",
-  "6": "Đã thử 44 alpha, rủi ro ăn may tăng -> kiểm tra độ bền: beta 120 phiên vẫn t = 3,46; ablation bỏ skew làm t giảm 3,79 -> 3,30, nên skew có đóng góp thật.",
-  "7": "beta_high_div dẫn đầu nhưng turnover 45x/năm -> làm mượt thành phần nhanh. Thêm intraday momentum (tug of war). t-stat không vượt được 3,97: dấu hiệu bão hoà.",
-  "8": "Tăng trọng số các thành phần chậm. Cải thiện 3,97 -> 4,07 (< 0,1) là 2 thế hệ không tiến bộ -> dừng tìm kiếm."
+  "0": "Hand-written baseline: 5-day reversal, 60-day momentum, low volatility, volume shock. All 4 are weak (IC ≤ 0.013) and turnover reaches 78x/year, so fees eat all the profit.",
+  "1": "The baselines are weak and expensive. Try 8 new hypotheses on money flow and sentiment: price-volume divergence, 52-week-high anchoring, 'lottery' stocks (skew), Amihud, overnight gaps.",
+  "2": "pv_divergence and near_high lead and are almost uncorrelated -> cross them. Mutate windows to test robustness. Amihud and overnight have negative IC -> flip the sign.",
+  "3": "Gen 2: decay_linear hit NaN and was rejected -> switch to ts_mean. pv_div with a 20-day window is much weaker = parameter-sensitive. Smooth signals to cut turnover, combine 3 signal sources.",
+  "4": "First alpha to beat the basket after fees (high_dist_slow). But the elite are all near_high variants (correlation 0.7–0.95) -> look for orthogonal signals: MAX effect, low beta, up-day volume.",
+  "5": "low_beta has a strongly negative IC (t = -2.65) -> flip it to high beta (a cyclical bet, be careful). up_volume_share is orthogonal (corr 0.27) -> add it to the leading alpha.",
+  "6": "44 alphas tried, so the risk of a lucky hit is growing -> robustness checks: 120-day beta still gives t = 3.46; the ablation dropping skew lowers t from 3.79 to 3.30, so skew really contributes.",
+  "7": "beta_high_div leads but turnover is 45x/year -> smooth the fast component. Add intraday momentum (tug of war). The t-stat cannot beat 3.97: a sign of saturation.",
+  "8": "Increase the weight of the slow components. The improvement from 3.97 to 4.07 (< 0.1) makes 2 generations without progress -> stop the search."
 }

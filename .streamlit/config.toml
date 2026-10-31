@@ -1,5 +1,5 @@
 [server]
-# Chỉ mở trên máy mình: tab "Tự thử alpha" chạy công thức người dùng gõ vào.
+# Only serve on this machine: the "Try an alpha" tab evaluates formulas typed in by users.
 address = "localhost"
 headless = false
 

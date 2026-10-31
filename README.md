@@ -1,59 +1,65 @@
 # AI Quant Researcher — AIE301m
 
-LLM agent tự đề xuất công thức alpha cho rổ VN30, tự backtest và tự cải tiến qua nhiều thế hệ.
+An LLM agent that proposes alpha formulas for the VN30 basket (Vietnam's 30 largest stocks), backtests them, and improves
+them on its own over several generations.
 
-## Cài đặt
-
-```bash
-pip install yfinance pandas scipy anthropic streamlit
-```
-
-## Demo trên lớp
+## Installation
 
 ```bash
-streamlit run demo_app.py        # mở http://localhost:8501
+git clone https://github.com/AphrodiTe0101/AIE301m_AlphaAgent.git
+cd AIE301m_AlphaAgent
+pip install -r requirements.txt
 ```
 
-| Tab | Dùng để |
+The repo already includes the price data (`data/panel.pkl`) and every result from the report, so the demo works
+right after cloning, with no download and no API key.
+
+## Demo
+
+```bash
+streamlit run demo_app.py        # opens http://localhost:8501
+```
+
+| Tab | Purpose |
 | --- | --- |
-| 🔁 Replay 8 thế hệ | Phát lại quá trình tiến hoá (tick "chấm điểm lại thật" để chạy lại backtest, khoảng 3 phút) |
-| 🤖 Agent live | Claude Opus 5.5 nghiên cứu ngay trước lớp; cần `ANTHROPIC_API_KEY`, ghi vào `demo_run/<thời gian>/` |
-| 🧪 Tự thử alpha | Khán giả gõ công thức, engine chấm điểm train ngay; thử `close.values` để thấy sandbox chặn |
-| 📊 Kết quả cuối | 3 ngưỡng đạt, IC theo năm, đường vốn sau phí so với rổ VN30 |
+| 🔁 Replay 8 generations | Replays the evolution (tick "really re-score" to re-run the backtests, about 3 minutes) |
+| 🤖 Live agent | Claude Opus 5.5 researches live; needs `ANTHROPIC_API_KEY`, writes to `demo_run/<timestamp>/` |
+| 🧪 Try an alpha | Type a formula and the engine scores it on train right away; try `close.values` to see the sandbox block it |
+| 📊 Final results | The 3 targets met, IC by year, equity curve after fees vs the VN30 basket |
 
-Kịch bản 5 phút có sẵn ở thanh bên trái của app. Nên chạy thử tab Agent live ở nhà trước buổi thuyết trình,
-vì mỗi thế hệ mất khoảng 30–90 giây và vài cent USD.
+A 5-minute demo script is in the app's left sidebar. Try the Live agent tab before presenting:
+each generation takes about 30–90 seconds and costs a few US cents.
 
-## Chạy từ dòng lệnh
+## Command line
 
 ```bash
-python data.py                               # tải dữ liệu VN30 -> data/panel.pkl
-python run_generation.py alphas/gen_00.json  # baseline do người viết
-python agent.py --generations 8 --per-gen 8  # vòng lặp tự động (cần ANTHROPIC_API_KEY), ghi vào demo_run/
-python final_eval.py                         # mở dữ liệu OOS, chạy ĐÚNG MỘT LẦN sau khi agent dừng
+python data.py                               # download VN30 data -> data/panel.pkl
+python run_generation.py alphas/gen_00.json  # hand-written baseline
+python agent.py --generations 8 --per-gen 8  # autonomous loop (needs ANTHROPIC_API_KEY), writes to demo_run/
+python final_eval.py                         # opens the OOS data, run EXACTLY ONCE after the agent stops
 ```
 
-Muốn tái hiện kết quả trong báo cáo mà không gọi API: xoá `results/leaderboard.csv`, chạy
-`run_generation.py` lần lượt cho `alphas/gen_00.json` … `gen_08.json`, rồi `final_eval.py`.
+To reproduce the report's results without calling the API: delete `results/leaderboard.csv`, run
+`run_generation.py` on `alphas/gen_00.json` … `gen_08.json` in order, then `final_eval.py`.
 
-## Cấu trúc
+## Structure
 
-| File | Vai trò |
+| File | Role |
 | --- | --- |
-| `data.py` | Tải OHLCV từ Yahoo Finance, sửa biến động vượt biên độ (chia tách chưa điều chỉnh) |
-| `ops.py` | DSL: các toán tử alpha (chỉ nhìn về quá khứ) |
-| `engine.py` | Tính alpha, IC, t-stat, backtest long-only top-6 sau phí |
-| `run_generation.py` | Chấm một thế hệ trên train 2019-2022, ghi `results/leaderboard.csv` |
-| `agent.py` | Vòng lặp tự động với Claude API (structured output, tự dừng); `evolve()` là generator dùng chung cho CLI và app |
-| `demo_app.py` | Giao diện demo Streamlit 4 tab |
-| `final_eval.py` | Quy tắc chọn định trước + đánh giá test/holdout/blind |
-| `alphas/gen_XX.json` | Các alpha agent đã đề xuất, kèm giả thuyết |
-| `results/` | Bảng xếp hạng, kết quả cuối, dữ liệu biểu đồ |
+| `data.py` | Downloads OHLCV from Yahoo Finance, fixes moves beyond the price limit (unadjusted splits) |
+| `ops.py` | DSL: the alpha operators (backward-looking only) |
+| `engine.py` | Computes alphas, IC, t-stat, and a long-only top-6 backtest after fees |
+| `run_generation.py` | Scores one generation on train 2019-2022, writes `results/leaderboard.csv` |
+| `agent.py` | Autonomous loop on the Claude API (structured output, stops by itself); `evolve()` is a generator shared by the CLI and the app |
+| `demo_app.py` | 4-tab Streamlit demo UI |
+| `final_eval.py` | Pre-registered selection rule + test/holdout/blind evaluation |
+| `alphas/gen_XX.json` | The alphas the agent proposed, with their hypotheses |
+| `results/` | Leaderboard, final results, chart data |
 
-## Lưu ý
+## Notes
 
-- `engine.check_expr` chỉ cho phép tên biến/toán tử DSL, số và phép toán (whitelist AST, không thuộc tính,
-  không index, không lambda), sau đó mới `eval` với builtins bị chặn. App chỉ mở trên `localhost`
-  (`.streamlit/config.toml`); đừng mở ra mạng công cộng.
-- Danh sách VN30 cố định (kỳ 2024) cho cả giai đoạn -> có survivorship bias.
-- Chạy tiếp agent trên bảng xếp hạng cũ sau khi đã xem OOS sẽ làm OOS không còn "sạch".
+- `engine.check_expr` only allows DSL variable/operator names, numbers and arithmetic (an AST whitelist: no attributes,
+  no indexing, no lambdas), and only then calls `eval` with builtins blocked. The app only listens on `localhost`
+  (`.streamlit/config.toml`); do not expose it to a public network.
+- The VN30 list is fixed (2024 review) for the whole period -> survivorship bias.
+- Continuing to run the agent on the old leaderboard after looking at the OOS data makes the OOS no longer "clean".

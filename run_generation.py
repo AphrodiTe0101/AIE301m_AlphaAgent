@@ -1,9 +1,9 @@
-"""Công cụ của agent: chấm một thế hệ alpha trên giai đoạn TRAIN và in phản hồi.
+"""The agent's tool: scores one generation of alphas on the TRAIN period and prints feedback.
 
-Chạy: python run_generation.py alphas/gen_03.json
-File JSON: [{"name": ..., "expr": ..., "hypothesis": ..., "parent": ...}, ...]
+Run: python run_generation.py alphas/gen_03.json
+JSON file: [{"name": ..., "expr": ..., "hypothesis": ..., "parent": ...}, ...]
 
-Chỉ in số liệu train -- agent không bao giờ nhìn thấy test/holdout trong lúc tìm kiếm.
+Prints train stats only -- the agent never sees test/holdout while searching.
 """
 import json
 import sys
@@ -21,20 +21,20 @@ SHOW = ["gen", "name", "ic", "ic_ir", "t_stat", "ic_pos", "excess_ann", "sharpe"
 
 
 def rank_corr(a, b):
-    """Tương quan hạng trung bình giữa hai alpha (mỗi 5 phiên), đo độ trùng lặp ý tưởng."""
+    """Average rank correlation between two alphas (every 5 sessions), measures how much two ideas overlap."""
     ra, rb = a.rank(axis=1).iloc[::5], b.rank(axis=1).iloc[::5]
     return ra.corrwith(rb, axis=1).loc["2019":"2022"].mean()
 
 
 def main(path, results_dir=None):
-    """Chấm file thế hệ `path`; `results_dir` cho phép chạy demo ở thư mục riêng."""
+    """Score the generation file `path`; `results_dir` lets the demo run in its own directory."""
     board_path = Path(results_dir) / "leaderboard.csv" if results_dir else BOARD
     cache = Path(results_dir) / "cache" if results_dir else CACHE
     gen = int(Path(path).stem.split("_")[1])
     cands = json.loads(Path(path).read_text(encoding="utf-8"))
     board = pd.read_csv(board_path) if board_path.exists() else pd.DataFrame()
     if len(board):
-        board = board[board["gen"] != gen]  # chạy lại cùng thế hệ thì ghi đè
+        board = board[board["gen"] != gen]  # re-running the same generation overwrites it
     cache.mkdir(parents=True, exist_ok=True)
     elite = board[board["status"] == "ok"].nlargest(5, "t_stat") if len(board) else board
     elite_alphas = {n: pd.read_pickle(cache / f"{n}.pkl") for n in elite.get("name", [])}
@@ -46,13 +46,13 @@ def main(path, results_dir=None):
         try:
             stats, alpha, _ = evaluate(c["expr"], "train")
             if stats["coverage"] < 0.5:
-                raise ValueError(f"coverage chỉ {stats['coverage']:.0%} -> quá nhiều NaN")
+                raise ValueError(f"coverage only {stats['coverage']:.0%} -> too many NaN")
             alpha.to_pickle(cache / f"{c['name']}.pkl")
             corrs = {n: rank_corr(alpha, a) for n, a in elite_alphas.items()}
             row.update(stats, status="ok", error="",
                        max_corr=max(corrs.values(), key=abs) if corrs else float("nan"),
                        corr_with=max(corrs, key=lambda n: abs(corrs[n])) if corrs else "")
-        except Exception as e:  # code do agent sinh ra có thể lỗi -> ghi nhận, không dừng vòng lặp
+        except Exception as e:  # agent-generated code may fail -> record it, do not stop the loop
             row.update(status="error", error=f"{type(e).__name__}: {e}"[:200])
             if "--debug" in sys.argv:
                 traceback.print_exc()
@@ -66,15 +66,15 @@ def main(path, results_dir=None):
     pd.set_option("display.width", 200)
     fmt = lambda df: df.reindex(columns=SHOW).round(3).to_string(index=False)
     ok = new[new.status == "ok"]
-    out = [f"=== THẾ HỆ {gen}: {len(ok)}/{len(new)} alpha chạy được (TRAIN 2019-2022) ==="]
+    out = [f"=== GENERATION {gen}: {len(ok)}/{len(new)} alphas ran (TRAIN 2019-2022) ==="]
     if len(ok):
         out.append(fmt(ok.sort_values("t_stat", ascending=False)))
-    out += [f"[LỖI] {r['name']}: {r['error']}" for _, r in new[new.status == "error"].iterrows()]
+    out += [f"[ERROR] {r['name']}: {r['error']}" for _, r in new[new.status == "error"].iterrows()]
     allok = board[board.status == "ok"]
-    out.append(f"\n=== TOP 8 TOÀN CỤC (theo t-stat IC train), {len(allok)}/{len(board)} alpha chạy được ===")
+    out.append(f"\n=== GLOBAL TOP 8 (by train IC t-stat), {len(allok)}/{len(board)} alphas ran ===")
     out.append(fmt(allok.nlargest(8, "t_stat")))
     if len(ok) and ok["corr_with"].ne("").any():
-        out.append("\nTrùng lặp lớn nhất với elite: " + ", ".join(
+        out.append("\nLargest overlap with the elite: " + ", ".join(
             f"{r['name']}~{r['corr_with']}={r['max_corr']:.2f}" for _, r in ok.iterrows() if r["corr_with"]))
     report = "\n".join(out)
     print(report)

@@ -1,7 +1,7 @@
-"""Đánh giá cuối: chạy MỘT lần sau khi agent dừng tìm kiếm.
+"""Final evaluation: run ONCE after the agent stops searching.
 
-Áp dụng quy tắc chọn đã định trước (t-stat IC train cao nhất; combo 5 alpha corr < 0.7),
-rồi mới mở dữ liệu test / holdout / blind. Kết quả ghi vào results/.
+Applies the pre-registered selection rule (highest train IC t-stat; a combo of 5 alphas with corr < 0.7),
+and only then opens the test / holdout / blind data. Results are written to results/.
 """
 import json
 
@@ -13,7 +13,7 @@ from engine import PERIODS, ROOT, backtest, compute_alpha, ic_stats, load_env, d
 from run_generation import BOARD, CACHE, rank_corr
 
 OUT = ROOT / "results"
-PERIODS["oos_all"] = ("2023-01-01", "2026-10-30")   # test + holdout liền mạch cho đường vốn
+PERIODS["oos_all"] = ("2023-01-01", "2026-10-30")   # test + holdout back to back for the equity curve
 EVAL = ["train", "test", "holdout", "blind"]
 
 
@@ -42,7 +42,7 @@ def main():
     agent = board[board.gen >= 1]
     ok = board[board.status == "ok"]
 
-    # ---- quy tắc chọn định trước (chỉ dựa trên train) ----
+    # ---- pre-registered selection rule (train only) ----
     best = ok.loc[ok.t_stat.idxmax()]
     combo_names = pick_combo(ok)
     best_alpha = pd.read_pickle(CACHE / f"{best['name']}.pkl")
@@ -62,7 +62,7 @@ def main():
     c = results["combo"]["report"]
     results["combo"]["overfit_ratio"] = c["test"]["ic"] / c["train"]["ic"]
 
-    # ---- IC train vs test cho mọi alpha (chỉ để phân tích sau, không dùng để chọn) ----
+    # ---- train vs test IC for every alpha (for later analysis only, never used for selection) ----
     rows = []
     for _, r in ok.iterrows():
         a = pd.read_pickle(CACHE / f"{r['name']}.pkl")
@@ -76,7 +76,7 @@ def main():
     base = allic[allic.gen == 0]
     results["baselines_test_ic"] = dict(zip(base.name, base.ic_test.round(4)))
 
-    # ---- tiến hoá: alpha tốt nhất (theo train) tại mỗi thế hệ ----
+    # ---- evolution: the best alpha (by train) at each generation ----
     evo = []
     for g in sorted(allic.gen.unique()):
         upto = allic[allic.gen <= g]
@@ -87,7 +87,7 @@ def main():
                     "n": int((board.gen == g).sum())})
     pd.DataFrame(evo).to_csv(OUT / "evolution.csv", index=False)
 
-    # ---- IC theo năm của alpha tốt nhất ----
+    # ---- yearly IC of the best alpha ----
     _, fwd, _ = load_env()
     ic = daily_ic(best_alpha, fwd)
     ic_c = daily_ic(combo_alpha, fwd)
@@ -95,32 +95,32 @@ def main():
     yearly.index.name = "year"
     yearly.round(4).to_csv(OUT / "ic_by_year.csv")
 
-    # ---- đường vốn OOS liền mạch 2023-01 -> 2026-10 ----
+    # ---- continuous OOS equity curve 2023-01 -> 2026-10 ----
     _, s_best, bench = backtest(best_alpha, "oos_all")
     _, s_combo, _ = backtest(combo_alpha, "oos_all")
     eq = pd.DataFrame({"best": (1 + s_best).cumprod(), "combo": (1 + s_combo).cumprod(), "vn30_ew": (1 + bench).cumprod()})
     eq.resample("W-FRI").last().round(4).to_csv(OUT / "equity_oos_weekly.csv")
     results["oos_all"] = {
         "best": backtest(best_alpha, "oos_all")[0], "combo": backtest(combo_alpha, "oos_all")[0]}
-    # beta thực tế của danh mục so với rổ (đo rủi ro thị trường ngầm)
+    # realised beta of the portfolio vs the basket (measures hidden market risk)
     results["oos_all"]["best_beta_vs_ew"] = float(np.cov(s_best, bench)[0, 1] / bench.var())
     results["oos_all"]["combo_beta_vs_ew"] = float(np.cov(s_combo, bench)[0, 1] / bench.var())
 
     (OUT / "final.json").write_text(json.dumps(results, indent=2, ensure_ascii=False, default=float), encoding="utf-8")
 
-    # ---- in tóm tắt ----
-    print(f"Agent: {results['n_agent_ok']}/{results['n_agent']} alpha chạy được ({results['runnable_rate']:.1%}), {results['generations']} thế hệ")
+    # ---- print summary ----
+    print(f"Agent: {results['n_agent_ok']}/{results['n_agent']} alphas ran ({results['runnable_rate']:.1%}), {results['generations']} generations")
     for key in ["best", "combo"]:
         r = results[key]
         print(f"\n=== {key.upper()}: {r.get('name', r.get('names'))}  overfit={r['overfit_ratio']:.2f}")
         print(pd.DataFrame(r["report"]).T[["ic", "t_stat", "ic_pos", "ann_ret", "sharpe", "max_dd",
                                             "bench_ann_ret", "bench_sharpe", "excess_ann", "turnover_ann"]].round(3).to_string())
     print("\nOOS 2023-01 -> 2026-10:", json.dumps(results["oos_all"], default=lambda x: round(float(x), 3), indent=1))
-    print("\nSpearman(IC train, IC test) trên mọi alpha:", round(results["spearman_train_vs_test_ic"], 3),
-          "| tỷ lệ alpha có IC test > 0:", round(results["share_positive_test_ic"], 3))
-    print("Baseline IC test:", results["baselines_test_ic"])
-    print("\nIC theo năm:\n", yearly.round(3).to_string())
-    print("\nTiến hoá:\n", pd.DataFrame(evo).round(3).to_string(index=False))
+    print("\nSpearman(IC train, IC test) across all alphas:", round(results["spearman_train_vs_test_ic"], 3),
+          "| share of alphas with test IC > 0:", round(results["share_positive_test_ic"], 3))
+    print("Baseline test IC:", results["baselines_test_ic"])
+    print("\nIC by year:\n", yearly.round(3).to_string())
+    print("\nEvolution:\n", pd.DataFrame(evo).round(3).to_string(index=False))
 
 
 if __name__ == "__main__":

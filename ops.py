@@ -1,13 +1,13 @@
-"""Ngôn ngữ alpha (DSL): các toán tử mà agent được phép dùng.
+"""The alpha language (DSL): the operators the agent is allowed to use.
 
-Mọi biến là DataFrame (ngày x mã). Toán tử ts_* chỉ nhìn về quá khứ (rolling),
-toán tử cs_* / rank so sánh giữa các mã trong cùng một ngày -> không có look-ahead.
+Every variable is a DataFrame (date x ticker). ts_* operators only look into the past (rolling),
+cs_* / rank operators compare tickers within the same day -> no look-ahead.
 """
 import numpy as np
 import pandas as pd
 
 
-# ---------- cắt ngang (cross-sectional, trong một ngày) ----------
+# ---------- cross-sectional (within one day) ----------
 def rank(x):
     return x.rank(axis=1, pct=True)
 
@@ -20,7 +20,7 @@ def demean(x):
     return x.sub(x.mean(axis=1), axis=0)
 
 
-# ---------- chuỗi thời gian (theo từng mã) ----------
+# ---------- time series (per ticker) ----------
 def delay(x, d):
     return x.shift(int(d))
 
@@ -58,7 +58,7 @@ def ts_zscore(x, d):
 
 
 def ts_rank(x, d):
-    """Vị trí phần trăm của giá trị hôm nay trong cửa sổ d phiên gần nhất."""
+    """Percentile position of today's value within the last d sessions."""
     d = int(d)
     return x.rolling(d, min_periods=max(2, d // 2)).apply(
         lambda a: (a[-1] > a[:-1]).mean() if len(a) > 1 else np.nan, raw=True)
@@ -79,7 +79,7 @@ def decay_linear(x, d):
     return x.rolling(d, min_periods=d).apply(lambda a: np.dot(a, w), raw=True)
 
 
-# ---------- phần tử ----------
+# ---------- element-wise ----------
 def sign(x):
     return np.sign(x)
 

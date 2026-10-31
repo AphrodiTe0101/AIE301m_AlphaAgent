@@ -1,0 +1,7 @@
+anthropic
+altair
+numpy
+pandas
+scipy
+streamlit
+yfinance
