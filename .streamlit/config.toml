@@ -1,0 +1,7 @@
+[server]
+# Chỉ mở trên máy mình: tab "Tự thử alpha" chạy công thức người dùng gõ vào.
+address = "localhost"
+headless = false
+
+[browser]
+gatherUsageStats = false

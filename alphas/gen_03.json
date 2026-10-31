@@ -1,0 +1,10 @@
+[
+  {"name": "g3_pv_div_mean", "expr": "rank(ts_mean(-ts_corr(rank(close), rank(volume), 10), 5))", "hypothesis": "Sửa lỗi gen2: decay_linear không chịu NaN -> dùng ts_mean (min_periods linh hoạt) để làm mượt pv_divergence, giảm turnover.", "parent": "g2_pv_div_smooth"},
+  {"name": "g3_triple", "expr": "rank(close / ts_max(close, 250)) + rank(-ts_corr(rank(close), rank(volume), 10)) + rank(-ts_skew(returns, 60))", "hypothesis": "Gộp 3 nguồn tín hiệu ít tương quan: neo đỉnh, phân kỳ giá-KL, né cổ phiếu xổ số.", "parent": "g2_high_x_div+g2_high_x_skew"},
+  {"name": "g3_high_x_div_smooth", "expr": "rank(close / ts_max(close, 250)) + rank(ts_mean(-ts_corr(rank(close), rank(volume), 10), 5))", "hypothesis": "high_x_div nhưng thành phần phân kỳ được làm mượt -> kỳ vọng giảm turnover 45x xuống ~30x.", "parent": "g2_high_x_div"},
+  {"name": "g3_risk_adj_mom", "expr": "rank(ts_mean(returns, 60) / ts_std(returns, 60))", "hypothesis": "Momentum điều chỉnh rủi ro (chất lượng xu hướng): xu hướng đều đặn bền hơn xu hướng giật cục.", "parent": "base_momentum_60d"},
+  {"name": "g3_vol_dryup", "expr": "rank(-ts_mean(volume, 5) / ts_mean(volume, 60))", "hypothesis": "Khối lượng cạn kiệt = áp lực bán đã hết; KL bùng nổ = đỉnh ngắn hạn.", "parent": "base_volume_shock"},
+  {"name": "g3_pullback_in_trend", "expr": "rank(close / ts_max(close, 250)) * rank(-pct(close, 5))", "hypothesis": "Mã gần đỉnh năm vừa điều chỉnh ngắn hạn = điểm mua trong xu hướng tăng (tương tác, không cộng).", "parent": "g1_near_high+base_reversal_5d"},
+  {"name": "g3_vwap_div", "expr": "-ts_corr(rank(vwap), rank(volume), 10)", "hypothesis": "Thay close bằng giá trung bình phiên để bớt nhiễu ATC.", "parent": "g1_pv_divergence"},
+  {"name": "g3_high_dist_slow", "expr": "rank(ts_mean(close, 5) / ts_max(close, 250))", "hypothesis": "near_high với giá làm mượt 5 phiên -> cùng tín hiệu, turnover thấp hơn.", "parent": "g1_near_high"}
+]

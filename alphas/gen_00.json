@@ -1,0 +1,6 @@
+[
+  {"name": "base_reversal_5d", "expr": "rank(-pct(close, 5))", "hypothesis": "Baseline do người viết: đảo chiều ngắn hạn 5 phiên", "parent": ""},
+  {"name": "base_momentum_60d", "expr": "rank(pct(delay(close, 5), 55))", "hypothesis": "Baseline do người viết: quán tính 3 tháng, bỏ 1 tuần gần nhất", "parent": ""},
+  {"name": "base_low_vol_20d", "expr": "rank(-ts_std(returns, 20))", "hypothesis": "Baseline do người viết: biến động thấp", "parent": ""},
+  {"name": "base_volume_shock", "expr": "rank(-volume / ts_mean(volume, 20))", "hypothesis": "Baseline do người viết: khối lượng đột biến thì tránh", "parent": ""}
+]

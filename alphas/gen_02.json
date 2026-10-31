@@ -1,0 +1,10 @@
+[
+  {"name": "g2_pv_div_20", "expr": "-ts_corr(rank(close), rank(volume), 20)", "hypothesis": "Đột biến cửa sổ của pv_divergence (10->20) để kiểm tra độ bền theo tham số và giảm turnover.", "parent": "g1_pv_divergence"},
+  {"name": "g2_pv_div_smooth", "expr": "rank(decay_linear(-ts_corr(rank(close), rank(volume), 10), 5))", "hypothesis": "pv_divergence tốt nhất nhưng turnover 57x/năm -> làm mượt tín hiệu 5 phiên.", "parent": "g1_pv_divergence"},
+  {"name": "g2_ret_vol_corr", "expr": "rank(-ts_corr(returns, volume / ts_mean(volume, 20), 20))", "hypothesis": "Biến thể dùng lợi nhuận thay vì mức giá: tăng giá kèm khối lượng đột biến = FOMO -> đảo chiều.", "parent": "g1_pv_divergence"},
+  {"name": "g2_near_high_120", "expr": "rank(close / ts_max(close, 120))", "hypothesis": "Đột biến near_high với đỉnh 6 tháng thay vì 12 tháng.", "parent": "g1_near_high"},
+  {"name": "g2_high_x_div", "expr": "rank(close / ts_max(close, 250)) + rank(-ts_corr(rank(close), rank(volume), 10))", "hypothesis": "Lai ghép 2 alpha dẫn đầu, tương quan với nhau thấp -> cộng hạng để đa dạng hoá.", "parent": "g1_near_high+g1_pv_divergence"},
+  {"name": "g2_high_x_skew", "expr": "rank(close / ts_max(close, 250)) + rank(-ts_skew(returns, 60))", "hypothesis": "Gần đỉnh nhưng không phải cổ phiếu 'xổ số': lọc bớt mã tăng nóng.", "parent": "g1_near_high+g1_neg_skew"},
+  {"name": "g2_money_flow", "expr": "rank(ts_sum((2 * close - high - low) / (high - low + 1e-9 * close) * volume, 10) / ts_sum(volume, 10))", "hypothesis": "Close-location có trọng số khối lượng (kiểu Chaikin money flow): phiên khối lượng lớn đóng cửa cao mới có ý nghĩa.", "parent": "g1_close_location"},
+  {"name": "g2_overnight_mom", "expr": "rank(ts_mean(open / delay(close, 1) - 1, 20))", "hypothesis": "overnight_rev có IC âm -> đảo dấu: gap mở cửa dương kéo dài là tin tốt đang được hấp thụ.", "parent": "g1_overnight_rev"}
+]

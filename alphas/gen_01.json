@@ -1,0 +1,10 @@
+[
+  {"name": "g1_smooth_reversal", "expr": "rank(-decay_linear(returns, 10))", "hypothesis": "Baseline reversal có IC>0 nhưng turnover 78x/năm. Làm mượt bằng trung bình có trọng số 10 phiên để giảm turnover mà giữ tín hiệu đảo chiều.", "parent": "base_reversal_5d"},
+  {"name": "g1_pv_divergence", "expr": "-ts_corr(rank(close), rank(volume), 10)", "hypothesis": "Giá và khối lượng cùng tăng (tương quan dương) thường là đám đông đuổi giá -> đảo chiều; tương quan âm là tích lũy.", "parent": ""},
+  {"name": "g1_close_location", "expr": "rank(ts_mean((close - low) / (high - low + 1e-9 * close), 10))", "hypothesis": "Đóng cửa gần giá cao nhất phiên lặp lại nhiều ngày = lực mua chủ động/tích lũy của tổ chức.", "parent": ""},
+  {"name": "g1_liquidity", "expr": "rank(log(adv20))", "hypothesis": "Mã thanh khoản cao trong VN30 được khối ngoại và quỹ ETF ưu tiên -> dòng tiền ổn định hơn.", "parent": ""},
+  {"name": "g1_near_high", "expr": "rank(close / ts_max(close, 250))", "hypothesis": "Hiệu ứng neo giá đỉnh 52 tuần (George & Hwang): mã gần đỉnh bị nhà đầu tư phản ứng chậm với tin tốt -> tiếp tục tăng.", "parent": "base_momentum_60d"},
+  {"name": "g1_amihud", "expr": "rank(ts_mean(abs(returns) / value, 20))", "hypothesis": "Phần bù kém thanh khoản (Amihud): mã kém thanh khoản hơn cần lợi nhuận kỳ vọng cao hơn.", "parent": ""},
+  {"name": "g1_overnight_rev", "expr": "rank(-ts_mean(open / delay(close, 1) - 1, 10))", "hypothesis": "Nhà đầu tư cá nhân đặt lệnh ATO theo cảm xúc -> gap mở cửa dương liên tục là quá đà, sẽ đảo chiều.", "parent": ""},
+  {"name": "g1_neg_skew", "expr": "rank(-ts_skew(returns, 60))", "hypothesis": "Cổ phiếu 'xổ số' (lợi nhuận lệch phải) bị cá nhân mua quá giá -> lợi nhuận tương lai thấp hơn.", "parent": ""}
+]
